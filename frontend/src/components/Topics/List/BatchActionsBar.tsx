@@ -14,6 +14,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { ActionCanButton } from 'components/common/ActionComponent';
 import { isPermitted } from 'lib/permissions';
 import { useUserInfo } from 'lib/hooks/useUserInfo';
+import ClusterContext from 'components/contexts/ClusterContext';
 
 interface BatchActionsbarProps {
   rows: Row<Topic>[];
@@ -26,6 +27,7 @@ const BatchActionsbar: React.FC<BatchActionsbarProps> = ({
 }) => {
   const { clusterName } = useAppParams<{ clusterName: ClusterName }>();
   const confirm = useConfirm();
+  const { isDataHub = false } = React.useContext(ClusterContext);
   const deleteTopic = useDeleteTopic(clusterName);
   const selectedTopics = rows.map(({ original }) => original.name);
   const client = useQueryClient();
@@ -153,15 +155,17 @@ const BatchActionsbar: React.FC<BatchActionsbarProps> = ({
       >
         Copy selected topic
       </ActionCanButton>
-      <ActionCanButton
-        buttonSize="M"
-        buttonType="secondary"
-        onClick={purgeTopicsHandler}
-        disabled={!selectedTopics.length}
-        canDoAction={canPurgeSelectedTopics}
-      >
-        Purge messages of selected topics
-      </ActionCanButton>
+      {!isDataHub && (
+        <ActionCanButton
+          buttonSize="M"
+          buttonType="secondary"
+          onClick={purgeTopicsHandler}
+          disabled={!selectedTopics.length}
+          canDoAction={canPurgeSelectedTopics}
+        >
+          Purge messages of selected topics
+        </ActionCanButton>
+      )}
     </>
   );
 };

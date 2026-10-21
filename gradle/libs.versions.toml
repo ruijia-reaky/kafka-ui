@@ -43,6 +43,8 @@ checkstyle = '10.24.0'
 prometheus = '1.3.6'
 lucene = '10.3.2'
 
+aliyun-datahub = '2.25.3'
+
 [plugins]
 spring-boot = { id = 'org.springframework.boot', version.ref = 'spring-boot' }
 spring-dependency-management = { id = 'io.spring.dependency-management', version = '1.1.7' }
@@ -56,6 +58,7 @@ sonarqube = { id = "org.sonarqube", version = "6.0.1.5171" }
 
 
 [libraries]
+aliyun-datahub-sdk = { module = 'com.aliyun.datahub:aliyun-sdk-datahub', version.ref = 'aliyun-datahub' }
 spring-starter-actuator = { module = 'org.springframework.boot:spring-boot-starter-actuator', version.ref = 'spring-boot' }
 spring-starter-test = { module = 'org.springframework.boot:spring-boot-starter-test', version.ref = 'spring-boot' }
 spring-starter-webflux = { module = 'org.springframework.boot:spring-boot-starter-webflux', version.ref = 'spring-boot' }

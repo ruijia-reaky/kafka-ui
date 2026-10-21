@@ -146,6 +146,65 @@ Please refer to our [configuration](https://ui.docs.kafbat.io/configuration/conf
 The liveness and readiness endpoint is at `/actuator/health`.<br/>
 The info endpoint (build info) is located at `/actuator/info`.
 
+## Alibaba Cloud DataHub clusters
+
+A cluster can point to [Alibaba Cloud DataHub](https://www.alibabacloud.com/product/datahub) instead of Kafka.
+Kafka clusters are configured exactly as before, `type` defaults to `KAFKA`.
+
+```yaml
+kafka:
+  clusters:
+    - name: local
+      bootstrapServers: localhost:9092
+    - name: datahub
+      type: DATAHUB
+      datahub:
+        endpoint: https://dh-cn-hangzhou.aliyuncs.com
+        projects: [my_project]          # several projects show topics as <project>.<topic>
+        accessId: ${DATAHUB_ACCESS_ID}
+        accessKey: ${DATAHUB_ACCESS_KEY}
+        # securityToken: ${DATAHUB_SECURITY_TOKEN}   # STS only
+```
+
+The same with environment variables:
+
+```bash
+KAFKA_CLUSTERS_1_NAME=datahub
+KAFKA_CLUSTERS_1_TYPE=DATAHUB
+KAFKA_CLUSTERS_1_DATAHUB_ENDPOINT=https://dh-cn-hangzhou.aliyuncs.com
+KAFKA_CLUSTERS_1_DATAHUB_PROJECTS_0=my_project
+KAFKA_CLUSTERS_1_DATAHUB_ACCESSID=...
+KAFKA_CLUSTERS_1_DATAHUB_ACCESSKEY=...
+```
+
+Keep the AccessKey in environment variables or a local file that is not committed. The config API returns
+`accessKey` and `securityToken` as `******`, and a masked value submitted back keeps the current secret.
+
+| Kafka UI concept | DataHub | Status |
+|---|---|---|
+| Cluster status, version, features | Project reachability | Supported |
+| Topic list, details, create, delete | Topic (BLOB / TUPLE), schema in `datahub.schema` config | Supported |
+| Partition, offset | Shard, sequence | Supported |
+| Messages: oldest, newest, from/to offset, from/to timestamp, live tailing, filters, masking, serdes | `getRecords` by cursor | Supported |
+| Produce message | `putRecords`, partition `-1` routes by key; TUPLE values are JSON objects | Supported |
+| Consumer groups: list, lag, offsets, reset (earliest / latest / timestamp / offset), delete | Subscriptions | Supported |
+| Shards: view, split, merge | Topic → Shards tab | Supported |
+| Brokers, topic config edit, partitions increase, replication factor, clear messages, recreate, ACL, quotas, statistics, KSQL, Connect, Schema Registry | – | Hidden for DataHub clusters |
+| Audit to topic, ODD export, Prometheus endpoint | – | Skipped for DataHub clusters |
+
+Notes:
+- DataHub does not return the partition key on read, so the message key column is empty.
+- A shard that was just split or merged can't be split or merged again for a few seconds (DataHub limit).
+- A subscription shard with no committed offset is shown as starting from its oldest record.
+
+`DataHubIntegrationTest` (JUnit tag `datahub`) runs against a real project and is skipped unless
+`DATAHUB_IT_ENDPOINT`, `DATAHUB_IT_PROJECT`, `DATAHUB_IT_ACCESS_ID` and `DATAHUB_IT_ACCESS_KEY` are set.
+It creates a temporary topic and deletes it afterwards:
+
+```bash
+./gradlew :api:test --tests 'io.kafbat.ui.datahub.DataHubIntegrationTest'
+```
+
 # Configuration options
 
 All environment variables and configuration properties can be found [here](https://ui.docs.kafbat.io/configuration/misc-configuration-properties).

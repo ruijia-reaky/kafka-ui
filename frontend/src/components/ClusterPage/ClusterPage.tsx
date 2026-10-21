@@ -23,6 +23,12 @@ import { GlobalSettingsContext } from 'components/contexts/GlobalSettingsContext
 import New from 'components/Connect/New/New';
 import SuspenseQueryComponent from 'components/common/SuspenseQueryComponent/SuspenseQueryComponent';
 import DetailsPage from 'components/Connect/Details/DetailsPage';
+import {
+  isBrokersViewAvailable,
+  isDataHubCluster,
+  isTopicConfigEditAllowed,
+  isTopicPartitionsEditAllowed,
+} from 'lib/clusterFeatures';
 
 const Brokers = React.lazy(() => import('components/Brokers/Brokers'));
 const Topics = React.lazy(() => import('components/Topics/Topics'));
@@ -68,6 +74,10 @@ const ClusterPage: React.FC = () => {
       messageRelativeTimestamp: features.includes(
         ClusterFeaturesEnum.MESSAGE_RELATIVE_TIMESTAMP
       ),
+      isDataHub: isDataHubCluster(features),
+      isBrokersViewAvailable: isBrokersViewAvailable(features),
+      isTopicConfigEditAllowed: isTopicConfigEditAllowed(features),
+      isTopicPartitionsEditAllowed: isTopicPartitionsEditAllowed(features),
     };
   }, [clusterName, data]);
 
@@ -80,10 +90,12 @@ const ClusterPage: React.FC = () => {
       <ClusterContext.Provider value={contextValue}>
         <Suspense fallback={<PageLoader />}>
           <Routes>
-            <Route
-              path={getNonExactPath(clusterBrokerRelativePath)}
-              element={<Brokers />}
-            />
+            {contextValue.isBrokersViewAvailable && (
+              <Route
+                path={getNonExactPath(clusterBrokerRelativePath)}
+                element={<Brokers />}
+              />
+            )}
             <Route
               path={getNonExactPath(clusterTopicsRelativePath)}
               element={<Topics />}
@@ -137,7 +149,16 @@ const ClusterPage: React.FC = () => {
             )}
             <Route
               path="/"
-              element={<Navigate to={clusterBrokerRelativePath} replace />}
+              element={
+                <Navigate
+                  to={
+                    contextValue.isBrokersViewAvailable
+                      ? clusterBrokerRelativePath
+                      : clusterTopicsRelativePath
+                  }
+                  replace
+                />
+              }
             />
           </Routes>
           <Outlet />

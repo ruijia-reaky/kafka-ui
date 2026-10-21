@@ -1,6 +1,7 @@
 package io.kafbat.ui.service;
 
 import io.kafbat.ui.config.ClustersProperties;
+import io.kafbat.ui.exception.ValidationException;
 import io.kafbat.ui.model.KafkaCluster;
 import io.kafbat.ui.util.KafkaClientSslPropertiesUtil;
 import java.time.Instant;
@@ -36,6 +37,10 @@ public class AdminClientServiceImpl implements AdminClientService {
 
   @Override
   public Mono<ReactiveAdminClient> get(KafkaCluster cluster) {
+    if (cluster.isDataHub()) {
+      return Mono.error(new ValidationException(
+          "Operation is not supported for DataHub cluster '%s'".formatted(cluster.getName())));
+    }
     return Mono.justOrEmpty(adminClientCache.get(cluster.getName()))
         .switchIfEmpty(createAdminClient(cluster))
         .map(e -> adminClientCache.computeIfAbsent(cluster.getName(), key -> e));

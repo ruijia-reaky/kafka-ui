@@ -26,6 +26,7 @@ import io.kafbat.ui.model.TopicDTO;
 import io.kafbat.ui.service.acl.AclsService;
 import io.kafbat.ui.service.analyze.TopicAnalysisService;
 import io.kafbat.ui.service.audit.AuditService;
+import io.kafbat.ui.service.backend.ClusterBackendRegistry;
 import io.kafbat.ui.service.rbac.AccessControlService;
 import io.kafbat.ui.util.AccessControlServiceMock;
 import java.util.Comparator;
@@ -70,6 +71,7 @@ class TopicsServicePaginationTest {
   private final TopicsController topicsController =
       new TopicsController(
           mockTopicsService,
+          new ClusterBackendRegistry(mockTopicsService, null, null, null, null),
           mock(TopicAnalysisService.class),
           clusterMapper,
           clustersProperties,

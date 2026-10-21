@@ -8,6 +8,10 @@ export interface ContextProps {
   ftsEnabled: boolean;
   ftsDefaultEnabled: boolean;
   messageRelativeTimestamp?: boolean;
+  isDataHub?: boolean;
+  isBrokersViewAvailable?: boolean;
+  isTopicConfigEditAllowed?: boolean;
+  isTopicPartitionsEditAllowed?: boolean;
 }
 
 export const initialValue: ContextProps = {
@@ -18,6 +22,10 @@ export const initialValue: ContextProps = {
   ftsEnabled: false,
   ftsDefaultEnabled: false,
   messageRelativeTimestamp: false,
+  isDataHub: false,
+  isBrokersViewAvailable: true,
+  isTopicConfigEditAllowed: true,
+  isTopicPartitionsEditAllowed: true,
 };
 const ClusterContext = React.createContext(initialValue);
 

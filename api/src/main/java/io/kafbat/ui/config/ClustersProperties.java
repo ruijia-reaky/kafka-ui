@@ -2,8 +2,10 @@ package io.kafbat.ui.config;
 
 import static io.kafbat.ui.model.MetricsScrapeProperties.JMX_METRICS_TYPE;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.annotation.PostConstruct;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.time.Duration;
@@ -72,8 +74,10 @@ public class ClustersProperties {
   public static class Cluster {
     @NotBlank(message = "field name for for cluster could not be blank")
     String name;
-    @NotBlank(message = "field bootstrapServers for for cluster could not be blank")
+    ClusterType type = ClusterType.KAFKA;
     String bootstrapServers;
+    @Valid
+    DataHubConfig datahub;
 
     TruststoreConfig ssl;
 
@@ -103,6 +107,26 @@ public class ClustersProperties {
     List<@Valid Masking> masking;
 
     AuditProperties audit;
+
+    @JsonIgnore
+    @AssertTrue(message = "field bootstrapServers for for cluster could not be blank")
+    public boolean isBootstrapServersSet() {
+      return type == ClusterType.DATAHUB || StringUtils.hasText(bootstrapServers);
+    }
+  }
+
+  public enum ClusterType {
+    KAFKA, DATAHUB
+  }
+
+  @Data
+  @ToString(exclude = {"accessKey", "securityToken"})
+  public static class DataHubConfig {
+    String endpoint;
+    List<String> projects;
+    String accessId;
+    String accessKey;
+    String securityToken;
   }
 
   @Data
@@ -295,6 +319,7 @@ public class ClustersProperties {
   public void validateAndSetDefaults() {
     if (clusters != null) {
       validateClusterNames();
+      validateClusterConnections();
       flattenClusterProperties();
       setMetricsDefaults();
     }
@@ -330,6 +355,24 @@ public class ClustersProperties {
       });
     }
     return flattened;
+  }
+
+  private void validateClusterConnections() {
+    for (Cluster cluster : clusters) {
+      if (cluster.getType() == null) {
+        cluster.setType(ClusterType.KAFKA);
+      }
+      if (cluster.getType() == ClusterType.DATAHUB) {
+        DataHubConfig datahub = cluster.getDatahub();
+        if (datahub == null || !StringUtils.hasText(datahub.getEndpoint())
+            || datahub.getProjects() == null || datahub.getProjects().isEmpty()
+            || !StringUtils.hasText(datahub.getAccessId()) || !StringUtils.hasText(datahub.getAccessKey())) {
+          throw new IllegalStateException("Application config isn't valid. DataHub cluster '%s' requires "
+              .formatted(cluster.getName())
+                  + "datahub.endpoint, datahub.projects, datahub.accessId, datahub.accessKey");
+        }
+      }
+    }
   }
 
   private void validateClusterNames() {

@@ -22,6 +22,11 @@ export const TOPIC_NAME_VALIDATION_PATTERN = /^[a-zA-Z0-9._-]+$/;
 export const SCHEMA_NAME_VALIDATION_PATTERN = /^[.,A-Za-z0-9_/-]+$/;
 
 export const TOPIC_CUSTOM_PARAMS_PREFIX = 'customParams';
+export const DATAHUB_TOPIC_CUSTOM_PARAMS: Record<string, string> = {
+  'datahub.record.type': 'TUPLE',
+  'datahub.schema': 'id:STRING,value:DOUBLE?',
+  'datahub.comment': '',
+};
 export const TOPIC_CUSTOM_PARAMS: Record<string, string> = {
   'compression.type': 'producer',
   'leader.replication.throttled.replicas': '',

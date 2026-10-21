@@ -17,6 +17,7 @@ import {
   useUpdateTopic,
 } from 'lib/hooks/api/topics';
 import DangerZone from 'components/Topics/Topic/Edit/DangerZone/DangerZone';
+import ClusterContext from 'components/contexts/ClusterContext';
 import { ConfigSource } from 'generated-sources';
 import { TopicConfigByName, TopicFormData } from 'lib/interfaces/topic';
 
@@ -42,6 +43,8 @@ const Edit: React.FC = () => {
     QUERY_REFETCH_LIMITED_OPTIONS
   );
   const updateTopic = useUpdateTopic({ clusterName, topicName });
+  const { isTopicPartitionsEditAllowed = true } =
+    React.useContext(ClusterContext);
 
   const defaultValues = topicParamsTransformer(topic, topicConfig);
 
@@ -98,7 +101,7 @@ const Edit: React.FC = () => {
           onSubmit={methods.handleSubmit(onSubmit)}
         />
       </FormProvider>
-      {topic && (
+      {topic && isTopicPartitionsEditAllowed && (
         <DangerZone
           defaultPartitions={defaultValues.partitions}
           defaultReplicationFactor={

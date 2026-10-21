@@ -21,7 +21,7 @@ import io.kafbat.ui.model.SortOrderDTO;
 import io.kafbat.ui.model.rbac.AccessContext;
 import io.kafbat.ui.model.rbac.permission.TopicAction;
 import io.kafbat.ui.service.ConsumerGroupService;
-import io.kafbat.ui.service.OffsetsResetService;
+import io.kafbat.ui.service.backend.ClusterBackendRegistry;
 import io.kafbat.ui.service.mcp.McpTool;
 import java.util.List;
 import java.util.Map;
@@ -46,7 +46,7 @@ import reactor.util.function.Tuples;
 public class ConsumerGroupsController extends AbstractController implements ConsumerGroupsApi, McpTool {
 
   private final ConsumerGroupService consumerGroupService;
-  private final OffsetsResetService offsetsResetService;
+  private final ClusterBackendRegistry backends;
 
   @Value("${consumer.groups.page.size:25}")
   private int defaultConsumerGroupsPageSize;
@@ -62,7 +62,7 @@ public class ConsumerGroupsController extends AbstractController implements Cons
         .build();
 
     return validateAccess(context)
-        .then(consumerGroupService.deleteConsumerGroupById(getCluster(clusterName), id))
+        .then(backends.consumerGroups(getCluster(clusterName)).deleteConsumerGroupById(getCluster(clusterName), id))
         .doOnEach(sig -> audit(context, sig))
         .thenReturn(ResponseEntity.ok().build());
   }
@@ -96,7 +96,8 @@ public class ConsumerGroupsController extends AbstractController implements Cons
         .build();
 
     return validateAccess(context)
-        .then(consumerGroupService.getConsumerGroupDetail(getCluster(clusterName), consumerGroupId)
+        .then(backends.consumerGroups(getCluster(clusterName))
+            .getConsumerGroupDetail(getCluster(clusterName), consumerGroupId)
             .map(ConsumerGroupMapper::toDetailsDto)
             .map(ResponseEntity::ok))
         .doOnEach(sig -> audit(context, sig));
@@ -153,7 +154,7 @@ public class ConsumerGroupsController extends AbstractController implements Cons
         .build();
 
     Mono<ResponseEntity<Flux<ConsumerGroupDTO>>> job =
-        consumerGroupService.getConsumerGroupsForTopic(getCluster(clusterName), topicName)
+        backends.consumerGroups(getCluster(clusterName)).getConsumerGroupsForTopic(getCluster(clusterName), topicName)
             .flatMapMany(Flux::fromIterable)
             .filterWhen(cg -> accessControlService.isConsumerGroupAccessible(cg.getGroupId(), clusterName))
             .map(ConsumerGroupMapper::toDto)
@@ -188,7 +189,7 @@ public class ConsumerGroupsController extends AbstractController implements Cons
         .build();
 
     return validateAccess(context).then(
-        consumerGroupService.getConsumerGroups(
+        backends.consumerGroups(getCluster(clusterName)).getConsumerGroups(
                 getCluster(clusterName),
                 OptionalInt.of(
                     Optional.ofNullable(page).filter(i -> i > 0).orElse(1)
@@ -223,7 +224,7 @@ public class ConsumerGroupsController extends AbstractController implements Cons
         .build();
 
     return validateAccess(context).then(
-        consumerGroupService.getConsumerGroups(
+        backends.consumerGroups(getCluster(clusterName)).getConsumerGroups(
                 getCluster(clusterName),
                 OptionalInt.empty(),
                 OptionalInt.empty(),
@@ -256,10 +257,10 @@ public class ConsumerGroupsController extends AbstractController implements Cons
         var cluster = getCluster(clusterName);
         switch (reset.getResetType()) {
           case EARLIEST:
-            return offsetsResetService
+            return backends.offsetsReset(cluster)
                 .resetToEarliest(cluster, group, reset.getTopic(), reset.getPartitions());
           case LATEST:
-            return offsetsResetService
+            return backends.offsetsReset(cluster)
                 .resetToLatest(cluster, group, reset.getTopic(), reset.getPartitions());
           case TIMESTAMP:
             if (reset.getResetToTimestamp() == null) {
@@ -269,7 +270,7 @@ public class ConsumerGroupsController extends AbstractController implements Cons
                   )
               );
             }
-            return offsetsResetService
+            return backends.offsetsReset(cluster)
                 .resetToTimestamp(cluster, group, reset.getTopic(), reset.getPartitions(),
                     reset.getResetToTimestamp());
           case OFFSET:
@@ -287,7 +288,7 @@ public class ConsumerGroupsController extends AbstractController implements Cons
                         d -> Optional.ofNullable(d.getOffset()).orElse(0L)
                     )
                 );
-            return offsetsResetService.resetToOffsets(cluster, group, reset.getTopic(), offsets);
+            return backends.offsetsReset(cluster).resetToOffsets(cluster, group, reset.getTopic(), offsets);
           default:
             return Mono.error(
                 new ValidationException("Unknown resetType " + reset.getResetType())

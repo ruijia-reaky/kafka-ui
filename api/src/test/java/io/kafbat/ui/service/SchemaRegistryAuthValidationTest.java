@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import io.kafbat.ui.config.ClustersProperties;
 import io.kafbat.ui.config.WebclientProperties;
+import io.kafbat.ui.datahub.DataHubClientFactory;
 import io.kafbat.ui.exception.ValidationException;
 import io.kafbat.ui.service.metrics.scrape.jmx.JmxMetricsRetriever;
 import org.junit.jupiter.api.BeforeEach;
@@ -20,7 +21,7 @@ class SchemaRegistryAuthValidationTest {
   void setUp() {
     WebclientProperties webclientProperties = new WebclientProperties();
     JmxMetricsRetriever jmxMetricsRetriever = Mockito.mock(JmxMetricsRetriever.class);
-    factory = new KafkaClusterFactory(webclientProperties, jmxMetricsRetriever);
+    factory = new KafkaClusterFactory(webclientProperties, jmxMetricsRetriever, new DataHubClientFactory());
   }
 
   @Test

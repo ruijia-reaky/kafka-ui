@@ -1,6 +1,10 @@
 import React, { useRef } from 'react';
 import { ErrorMessage } from '@hookform/error-message';
-import { TOPIC_CUSTOM_PARAMS } from 'lib/constants';
+import {
+  DATAHUB_TOPIC_CUSTOM_PARAMS,
+  TOPIC_CUSTOM_PARAMS,
+} from 'lib/constants';
+import ClusterContext from 'components/contexts/ClusterContext';
 import { FieldArrayWithId, useFormContext, Controller } from 'react-hook-form';
 import { InputLabel } from 'components/common/Input/InputLabel.styled';
 import { FormError } from 'components/common/Input/Input.styled';
@@ -43,7 +47,10 @@ const CustomParamField: React.FC<Props> = ({
   const nameValue = watch(`customParams.${index}.name`);
   const prevName = useRef(nameValue);
 
-  const options = Object.keys(TOPIC_CUSTOM_PARAMS)
+  const { isDataHub } = React.useContext(ClusterContext);
+  const params = isDataHub ? DATAHUB_TOPIC_CUSTOM_PARAMS : TOPIC_CUSTOM_PARAMS;
+
+  const options = Object.keys(params)
     .sort()
     .map((option) => ({
       value: option,
@@ -65,11 +72,11 @@ const CustomParamField: React.FC<Props> = ({
       prevName.current = nameValue;
       newExistingFields.push(nameValue);
       setExistingFields(newExistingFields);
-      setValue(`customParams.${index}.value`, TOPIC_CUSTOM_PARAMS[nameValue], {
-        shouldValidate: !!TOPIC_CUSTOM_PARAMS[nameValue],
+      setValue(`customParams.${index}.value`, params[nameValue], {
+        shouldValidate: !!params[nameValue],
       });
     }
-  }, [existingFields, index, nameValue, setExistingFields, setValue]);
+  }, [existingFields, index, nameValue, params, setExistingFields, setValue]);
 
   return (
     <C.Column>

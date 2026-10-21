@@ -16,6 +16,7 @@ import io.kafbat.ui.model.KafkaCluster;
 import io.kafbat.ui.model.ServerStatusDTO;
 import io.kafbat.ui.model.SortOrderDTO;
 import io.kafbat.ui.model.Statistics;
+import io.kafbat.ui.service.backend.ConsumerGroupOperations;
 import io.kafbat.ui.service.index.ConsumerGroupFilter;
 import io.kafbat.ui.service.metrics.scrape.ScrapedClusterState;
 import io.kafbat.ui.service.rbac.AccessControlService;
@@ -50,7 +51,7 @@ import reactor.util.function.Tuples;
 
 @Service
 @RequiredArgsConstructor
-public class ConsumerGroupService {
+public class ConsumerGroupService implements ConsumerGroupOperations {
 
   private final AdminClientService adminClientService;
   private final AccessControlService accessControlService;

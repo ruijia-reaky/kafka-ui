@@ -88,7 +88,8 @@ public class AuditService implements Closeable {
     if (auditProps == null) {
       return Optional.empty();
     }
-    boolean topicAudit = Optional.ofNullable(auditProps.getTopicAuditEnabled()).orElse(false);
+    boolean topicAudit = Optional.ofNullable(auditProps.getTopicAuditEnabled()).orElse(false)
+        && !cluster.isDataHub();
     boolean consoleAudit = Optional.ofNullable(auditProps.getConsoleAuditEnabled()).orElse(false);
     boolean alterLogOnly = Optional.ofNullable(auditProps.getLevel())
         .map(lvl -> lvl == ClustersProperties.AuditProperties.LogLevel.ALTER_ONLY).orElse(true);

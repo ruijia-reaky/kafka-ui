@@ -75,6 +75,23 @@ describe('ClusterMenu', () => {
     expect(screen.getByTitle('KSQL DB')).toBeInTheDocument();
   });
 
+  it('hides brokers for DataHub cluster', () => {
+    render(
+      setupComponent(
+        {
+          ...onlineClusterPayload,
+          features: [ClusterFeaturesEnum.DATAHUB_SHARDS],
+        },
+        true
+      )
+    );
+
+    expect(getMenuItems().length).toEqual(3);
+    expect(screen.queryByTitle('Brokers')).not.toBeInTheDocument();
+    expect(getTopics()).toBeInTheDocument();
+    expect(getConsumers()).toBeInTheDocument();
+  });
+
   it('renders open cluster menu', () => {
     render(setupComponent(onlineClusterPayload, true), {
       initialEntries: [clusterConnectorsPath(onlineClusterPayload.name)],

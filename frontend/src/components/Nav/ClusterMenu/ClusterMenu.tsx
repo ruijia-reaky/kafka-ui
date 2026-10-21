@@ -18,6 +18,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { useLocalStorage } from 'lib/hooks/useLocalStorage';
 import { ClusterColorKey } from 'theme/theme';
 import useScrollIntoView from 'lib/hooks/useScrollIntoView';
+import { isBrokersViewAvailable } from 'lib/clusterFeatures';
 
 interface ClusterMenuProps {
   name: Cluster['name'];
@@ -55,7 +56,11 @@ const ClusterMenu: FC<ClusterMenuProps> = ({
     if (!isOpen) {
       setIsOpen(true);
     }
-    navigate(clusterBrokersPath(name));
+    navigate(
+      isBrokersViewAvailable(features)
+        ? clusterBrokersPath(name)
+        : clusterTopicsPath(name)
+    );
   };
 
   const handleToggleMenu = () => {
@@ -75,11 +80,13 @@ const ClusterMenu: FC<ClusterMenuProps> = ({
       />
       {isOpen && (
         <S.List>
-          <MenuItem
-            isActive={getIsMenuItemActive(clusterBrokersPath(name))}
-            to={clusterBrokersPath(name)}
-            title="Brokers"
-          />
+          {isBrokersViewAvailable(features) && (
+            <MenuItem
+              isActive={getIsMenuItemActive(clusterBrokersPath(name))}
+              to={clusterBrokersPath(name)}
+              title="Brokers"
+            />
+          )}
           <MenuItem
             isActive={getIsMenuItemActive(clusterTopicsPath(name))}
             to={clusterTopicsPath(name)}

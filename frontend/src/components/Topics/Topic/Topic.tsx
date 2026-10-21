@@ -13,6 +13,7 @@ import {
   clusterTopicEditRelativePath,
   clusterTopicMessagesRelativePath,
   clusterTopicSettingsRelativePath,
+  clusterTopicShardsRelativePath,
   clusterTopicsPath,
   clusterTopicStatisticsRelativePath,
   RouteParamsClusterTopic,
@@ -57,6 +58,7 @@ import Edit from './Edit/Edit';
 import Connectors from './Connectors/Connectors';
 import SendMessage from './SendMessage/SendMessage';
 import Acls from './Acls/Acls';
+import Shards from './Shards/Shards';
 
 const Topic: React.FC = () => {
   const {
@@ -90,8 +92,12 @@ const Topic: React.FC = () => {
     topicName,
   });
 
-  const { isReadOnly, isTopicDeletionAllowed } =
-    React.useContext(ClusterContext);
+  const {
+    isReadOnly,
+    isTopicDeletionAllowed,
+    isDataHub,
+    isTopicConfigEditAllowed = true,
+  } = React.useContext(ClusterContext);
 
   const deleteTopicHandler = async () => {
     await deleteTopic.mutateAsync(topicName);
@@ -127,57 +133,63 @@ const Topic: React.FC = () => {
           Produce Message
         </ActionButton>
         <Dropdown disabled={isReadOnly || data?.internal}>
-          <ActionDropdownItem
-            onClick={() => navigate(clusterTopicEditRelativePath)}
-            permission={{
-              resource: ResourceType.TOPIC,
-              action: Action.EDIT,
-              value: topicName,
-            }}
-          >
-            Edit settings
-            <DropdownItemHint>
-              Pay attention! This operation has
-              <br />
-              especially important consequences.
-            </DropdownItemHint>
-          </ActionDropdownItem>
+          {isTopicConfigEditAllowed && (
+            <ActionDropdownItem
+              onClick={() => navigate(clusterTopicEditRelativePath)}
+              permission={{
+                resource: ResourceType.TOPIC,
+                action: Action.EDIT,
+                value: topicName,
+              }}
+            >
+              Edit settings
+              <DropdownItemHint>
+                Pay attention! This operation has
+                <br />
+                especially important consequences.
+              </DropdownItemHint>
+            </ActionDropdownItem>
+          )}
 
-          <ActionDropdownItem
-            onClick={clearTopicMessagesHandler}
-            confirm="Are you sure want to clear topic messages?"
-            disabled={!canCleanup}
-            danger
-            permission={{
-              resource: ResourceType.TOPIC,
-              action: Action.MESSAGES_DELETE,
-              value: topicName,
-            }}
-          >
-            Clear messages
-            <DropdownItemHint>
-              Clearing messages is only allowed for topics
-              <br />
-              with DELETE policy
-            </DropdownItemHint>
-          </ActionDropdownItem>
+          {!isDataHub && (
+            <ActionDropdownItem
+              onClick={clearTopicMessagesHandler}
+              confirm="Are you sure want to clear topic messages?"
+              disabled={!canCleanup}
+              danger
+              permission={{
+                resource: ResourceType.TOPIC,
+                action: Action.MESSAGES_DELETE,
+                value: topicName,
+              }}
+            >
+              Clear messages
+              <DropdownItemHint>
+                Clearing messages is only allowed for topics
+                <br />
+                with DELETE policy
+              </DropdownItemHint>
+            </ActionDropdownItem>
+          )}
 
-          <ActionDropdownItem
-            onClick={recreateTopic.mutateAsync}
-            confirm={
-              <>
-                Are you sure want to recreate <b>{topicName}</b> topic?
-              </>
-            }
-            danger
-            permission={{
-              resource: ResourceType.TOPIC,
-              action: [Action.MESSAGES_READ, Action.CREATE, Action.DELETE],
-              value: topicName,
-            }}
-          >
-            Recreate Topic
-          </ActionDropdownItem>
+          {!isDataHub && (
+            <ActionDropdownItem
+              onClick={recreateTopic.mutateAsync}
+              confirm={
+                <>
+                  Are you sure want to recreate <b>{topicName}</b> topic?
+                </>
+              }
+              danger
+              permission={{
+                resource: ResourceType.TOPIC,
+                action: [Action.MESSAGES_READ, Action.CREATE, Action.DELETE],
+                value: topicName,
+              }}
+            >
+              Recreate Topic
+            </ActionDropdownItem>
+          )}
           <ActionDropdownItem
             onClick={deleteTopicHandler}
             confirm={
@@ -248,27 +260,39 @@ const Topic: React.FC = () => {
             >
               Settings
             </NavLink>
-            <ActionNavLink
-              to={clusterTopicStatisticsRelativePath}
-              className={({ isActive }) => (isActive ? 'is-active' : '')}
-              permission={{
-                resource: ResourceType.TOPIC,
-                action: Action.ANALYSIS_VIEW,
-                value: topicName,
-              }}
-            >
-              Statistics
-            </ActionNavLink>
-            <ActionNavLink
-              to={clusterTopicAclsRelativePath}
-              className={({ isActive }) => (isActive ? 'is-active' : '')}
-              permission={{
-                resource: ResourceType.ACL,
-                action: Action.VIEW,
-              }}
-            >
-              ACLs
-            </ActionNavLink>
+            {isDataHub && (
+              <NavLink
+                to={clusterTopicShardsRelativePath}
+                className={({ isActive }) => (isActive ? 'is-active' : '')}
+              >
+                Shards
+              </NavLink>
+            )}
+            {!isDataHub && (
+              <ActionNavLink
+                to={clusterTopicStatisticsRelativePath}
+                className={({ isActive }) => (isActive ? 'is-active' : '')}
+                permission={{
+                  resource: ResourceType.TOPIC,
+                  action: Action.ANALYSIS_VIEW,
+                  value: topicName,
+                }}
+              >
+                Statistics
+              </ActionNavLink>
+            )}
+            {!isDataHub && (
+              <ActionNavLink
+                to={clusterTopicAclsRelativePath}
+                className={({ isActive }) => (isActive ? 'is-active' : '')}
+                permission={{
+                  resource: ResourceType.ACL,
+                  action: Action.VIEW,
+                }}
+              >
+                ACLs
+              </ActionNavLink>
+            )}
             {isConnectorsAvailable && (
               <ActionNavLink
                 to={clusterTopicConnectorsRelativePath}
@@ -304,13 +328,24 @@ const Topic: React.FC = () => {
                   element={<Statistics />}
                 />
                 <Route path={clusterTopicAclsRelativePath} element={<Acls />} />
+                {isDataHub && (
+                  <Route
+                    path={clusterTopicShardsRelativePath}
+                    element={<Shards />}
+                  />
+                )}
                 {isConnectorsAvailable && (
                   <Route
                     path={clusterTopicConnectorsRelativePath}
                     element={<Connectors connectors={connectors} />}
                   />
                 )}
-                <Route path={clusterTopicEditRelativePath} element={<Edit />} />
+                {isTopicConfigEditAllowed && (
+                  <Route
+                    path={clusterTopicEditRelativePath}
+                    element={<Edit />}
+                  />
+                )}
               </Routes>
             </Suspense>
           </TopicActionsProvider>

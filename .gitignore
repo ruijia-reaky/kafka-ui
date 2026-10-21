@@ -53,5 +53,12 @@ node_modules/
 test-results
 frontend/test-report.xml
 
+# local cluster credentials (DataHub AccessKey etc.), never commit
+application-local.yml
+application-local.yaml
+dynamic_config.yaml
+*.local.env
+/.local/
+
 # generated from contract-typespec on every build (api:copyOpenApiSpecForSwagger)
 /api/src/main/resources/static/openapi/kafbat-ui-api.yaml

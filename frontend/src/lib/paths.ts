@@ -158,6 +158,7 @@ export const clusterTopicConsumerGroupsRelativePath = 'consumer-groups';
 export const clusterTopicStatisticsRelativePath = 'statistics';
 export const clusterTopicConnectorsRelativePath = 'connectors';
 export const clusterTopicAclsRelativePath = 'acls';
+export const clusterTopicShardsRelativePath = 'shards';
 export const clusterTopicEditRelativePath = 'edit';
 export const clusterTopicPath = (
   clusterName: ClusterName = RouteParams.clusterName,

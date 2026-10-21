@@ -15,6 +15,7 @@ class OddExporterScheduler {
   @Scheduled(fixedRateString = "${kafka.send-stats-to-odd-millis:30000}")
   public void sendMetricsToOdd() {
     Flux.fromIterable(clustersStorage.getKafkaClusters())
+        .filter(c -> !c.isDataHub())
         .parallel()
         .runOn(Schedulers.parallel())
         .flatMap(oddExporter::export)

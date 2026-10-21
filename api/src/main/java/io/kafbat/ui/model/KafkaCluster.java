@@ -23,6 +23,9 @@ public class KafkaCluster {
   private final ClustersProperties.Cluster originalProperties;
 
   private final String name;
+  @Builder.Default
+  private final ClustersProperties.ClusterType type = ClustersProperties.ClusterType.KAFKA;
+  private final ClustersProperties.DataHubConfig datahub;
   private final String version;
   private final String bootstrapServers;
   private final Properties properties;
@@ -39,4 +42,8 @@ public class KafkaCluster {
   private final Map<String, ClustersProperties.ConnectCluster> connectsConfigs;
   private final ReactiveFailover<KsqlApiClient> ksqlClient;
   private final ReactiveFailover<PrometheusClientApi> prometheusStorageClient;
+
+  public boolean isDataHub() {
+    return type == ClustersProperties.ClusterType.DATAHUB;
+  }
 }

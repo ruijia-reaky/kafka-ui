@@ -30,6 +30,10 @@ public class FeatureService {
                                                          ClusterDescription clusterDescription) {
     List<Mono<ClusterFeature>> features = new ArrayList<>();
 
+    features.add(Mono.just(ClusterFeature.BROKERS_VIEW));
+    features.add(Mono.just(ClusterFeature.TOPIC_CONFIGS_EDIT));
+    features.add(Mono.just(ClusterFeature.TOPIC_PARTITIONS_EDIT));
+
     if (Optional.ofNullable(cluster.getConnectsClients())
         .filter(Predicate.not(Map::isEmpty))
         .isPresent()) {
@@ -53,21 +57,35 @@ public class FeatureService {
     features.add(aclEdit(adminClient, clusterDescription));
     features.add(quotaManagement(adminClient));
 
+    features.addAll(commonFeatures().stream().map(Mono::just).toList());
+
+    return Flux.fromIterable(features).flatMap(m -> m).collectList();
+  }
+
+  public List<ClusterFeature> getDataHubFeatures() {
+    List<ClusterFeature> features = new ArrayList<>();
+    features.add(ClusterFeature.TOPIC_DELETION);
+    features.add(ClusterFeature.DATAHUB_SHARDS);
+    features.addAll(commonFeatures());
+    return features;
+  }
+
+  private List<ClusterFeature> commonFeatures() {
+    List<ClusterFeature> features = new ArrayList<>();
     if (clustersProperties.getFts() != null) {
       ClustersProperties.ClusterFtsProperties fts = clustersProperties.getFts();
       if (fts.isEnabled()) {
-        features.add(Mono.just(ClusterFeature.FTS_ENABLED));
+        features.add(ClusterFeature.FTS_ENABLED);
         if (fts.isDefaultEnabled()) {
-          features.add(Mono.just(ClusterFeature.FTS_DEFAULT_ENABLED));
+          features.add(ClusterFeature.FTS_DEFAULT_ENABLED);
         }
       }
     }
 
     if (Boolean.TRUE.equals(clustersProperties.getMessageRelativeTimestamp())) {
-      features.add(Mono.just(ClusterFeature.MESSAGE_RELATIVE_TIMESTAMP));
+      features.add(ClusterFeature.MESSAGE_RELATIVE_TIMESTAMP);
     }
-
-    return Flux.fromIterable(features).flatMap(m -> m).collectList();
+    return features;
   }
 
   private Mono<ClusterFeature> topicDeletionEnabled(ReactiveAdminClient adminClient) {

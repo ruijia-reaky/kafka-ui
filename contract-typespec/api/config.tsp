@@ -143,6 +143,14 @@ model ApplicationConfig {
       };
       clusters?: {
         name?: string;
+        type?: "KAFKA" | "DATAHUB";
+        datahub?: {
+          endpoint?: string;
+          projects?: string[];
+          accessId?: string;
+          accessKey?: string;
+          securityToken?: string;
+        };
         bootstrapServers?: string;
         ssl?: {
           truststoreLocation?: string;

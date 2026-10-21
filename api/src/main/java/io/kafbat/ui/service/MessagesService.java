@@ -6,8 +6,10 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.hash.Hashing;
 import com.google.common.util.concurrent.RateLimiter;
 import io.kafbat.ui.config.ClustersProperties;
+import io.kafbat.ui.datahub.DataHubMessageService;
 import io.kafbat.ui.emitter.BackwardEmitter;
 import io.kafbat.ui.emitter.Cursor;
+import io.kafbat.ui.emitter.DataHubEmitter;
 import io.kafbat.ui.emitter.ForwardEmitter;
 import io.kafbat.ui.emitter.MessageFilters;
 import io.kafbat.ui.emitter.TailingEmitter;
@@ -67,6 +69,7 @@ public class MessagesService {
   private final AdminClientService adminClientService;
   private final DeserializationService deserializationService;
   private final ConsumerGroupService consumerGroupService;
+  private final DataHubMessageService dataHubMessageService;
   private final int maxPageSize;
   private final int defaultPageSize;
 
@@ -79,10 +82,12 @@ public class MessagesService {
   public MessagesService(AdminClientService adminClientService,
                          DeserializationService deserializationService,
                          ConsumerGroupService consumerGroupService,
+                         DataHubMessageService dataHubMessageService,
                          ClustersProperties properties) {
     this.adminClientService = adminClientService;
     this.deserializationService = deserializationService;
     this.consumerGroupService = consumerGroupService;
+    this.dataHubMessageService = dataHubMessageService;
 
     var pollingProps = Optional.ofNullable(properties.getPolling())
         .orElseGet(ClustersProperties.PollingProperties::new);
@@ -155,6 +160,9 @@ public class MessagesService {
 
   public Mono<RecordMetadata> sendMessage(KafkaCluster cluster, String topic,
                                           CreateTopicMessageDTO msg) {
+    if (cluster.isDataHub()) {
+      return dataHubMessageService.sendMessage(cluster, topic, msg);
+    }
     return withExistingTopic(cluster, topic)
         .publishOn(Schedulers.boundedElastic())
         .flatMap(desc -> sendMessageImpl(cluster, desc, msg));
@@ -254,6 +262,20 @@ public class MessagesService {
                                                   ConsumerPosition consumerPosition,
                                                   Predicate<TopicMessageDTO> filter,
                                                   int limit) {
+    if (cluster.isDataHub()) {
+      return dataHubMessageService.recordSource(cluster, topic)
+          .flux()
+          .publishOn(Schedulers.boundedElastic())
+          .flatMap(source -> Flux.create(new DataHubEmitter(
+                  source,
+                  consumerPosition,
+                  limit,
+                  deserializer,
+                  filter,
+                  cluster.getPollingSettings(),
+                  cursorsStorage.createNewCursor(deserializer, consumerPosition, filter, limit)))
+              .map(throttleUiPublish(consumerPosition.pollingMode())));
+    }
     return withExistingTopic(cluster, topic)
         .flux()
         .publishOn(Schedulers.boundedElastic())

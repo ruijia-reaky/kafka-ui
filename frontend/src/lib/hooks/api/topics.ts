@@ -149,9 +149,9 @@ const formatTopicCreation = (form: TopicFormData): TopicCreation => {
 
   const configs = {
     'cleanup.policy': cleanupPolicy,
-    'retention.ms': retentionMs.toString(),
-    'max.message.bytes': maxMessageBytes.toString(),
-    'min.insync.replicas': minInSyncReplicas.toString(),
+    'retention.ms': String(retentionMs ?? ''),
+    'max.message.bytes': String(maxMessageBytes ?? ''),
+    'min.insync.replicas': String(minInSyncReplicas ?? ''),
     ...Object.values(customParams || {}).reduce(topicReducer, {}),
   };
 
@@ -167,7 +167,7 @@ const formatTopicCreation = (form: TopicFormData): TopicCreation => {
     configs: cleanConfigs(),
   };
 
-  return replicationFactor.toString() !== ''
+  return String(replicationFactor ?? '') !== ''
     ? {
         ...topicsvalue,
         replicationFactor,

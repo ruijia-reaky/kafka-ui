@@ -5,6 +5,7 @@ import static io.kafbat.ui.model.rbac.permission.ApplicationConfigAction.VIEW;
 
 import io.kafbat.ui.api.ApplicationConfigApi;
 import io.kafbat.ui.config.ClustersProperties;
+import io.kafbat.ui.datahub.DataHubConfigSecrets;
 import io.kafbat.ui.mapper.DynamicConfigMapper;
 import io.kafbat.ui.model.AppAuthenticationSettingsDTO;
 import io.kafbat.ui.model.ApplicationConfigDTO;
@@ -64,7 +65,8 @@ public class ApplicationConfigController extends AbstractController implements A
     return validateAccess(context)
         .then(Mono.fromSupplier(() -> ResponseEntity.ok(
             new ApplicationConfigDTO()
-                .properties(configMapper.toDto(dynamicConfigOperations.getCurrentProperties()))
+                .properties(DataHubConfigSecrets.mask(
+                    configMapper.toDto(dynamicConfigOperations.getCurrentProperties())))
         )))
         .doOnEach(sig -> audit(context, sig));
   }
@@ -79,7 +81,8 @@ public class ApplicationConfigController extends AbstractController implements A
     return validateAccess(context)
         .then(restartRequestDto)
         .doOnNext(restartDto -> {
-          var newConfig = configMapper.fromDto(restartDto.getConfig().getProperties());
+          var newConfig = DataHubConfigSecrets.restore(configMapper.fromDto(restartDto.getConfig().getProperties()),
+              dynamicConfigOperations.getCurrentProperties());
           dynamicConfigOperations.persist(newConfig);
         })
         .doOnEach(sig -> audit(context, sig))
@@ -113,7 +116,8 @@ public class ApplicationConfigController extends AbstractController implements A
     return validateAccess(context)
         .then(configDto)
         .flatMap(config -> {
-          DynamicConfigOperations.PropertiesStructure newConfig = configMapper.fromDto(config.getProperties());
+          DynamicConfigOperations.PropertiesStructure newConfig = DataHubConfigSecrets.restore(
+              configMapper.fromDto(config.getProperties()), dynamicConfigOperations.getCurrentProperties());
           ClustersProperties clustersProperties = newConfig.getKafka();
           return validateClustersConfig(clustersProperties)
               .map(validations -> new ApplicationConfigValidationDTO().clusters(validations));

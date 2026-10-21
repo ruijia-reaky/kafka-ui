@@ -24,6 +24,7 @@ import io.kafbat.ui.model.ReplicationFactorChangeResponseDTO;
 import io.kafbat.ui.model.Statistics;
 import io.kafbat.ui.model.TopicCreationDTO;
 import io.kafbat.ui.model.TopicUpdateDTO;
+import io.kafbat.ui.service.backend.TopicOperations;
 import io.kafbat.ui.service.metrics.scrape.ScrapedClusterState;
 import io.kafbat.ui.service.metrics.scrape.ScrapedClusterState.TopicState;
 import java.time.Duration;
@@ -53,7 +54,7 @@ import reactor.util.retry.Retry;
 
 @Service
 @RequiredArgsConstructor
-public class TopicsService {
+public class TopicsService implements TopicOperations {
 
   private final AdminClientService adminClientService;
   private final StatisticsCache statisticsCache;

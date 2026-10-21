@@ -46,7 +46,8 @@ describe('TopicTable Components', () => {
   const renderComponent = (
     currentData: TopicsResponse | undefined = undefined,
     isReadOnly = false,
-    isTopicDeletionAllowed = true
+    isTopicDeletionAllowed = true,
+    isDataHub = false
   ) => {
     (useTopics as jest.Mock).mockImplementation(() => ({
       data: currentData,
@@ -59,6 +60,7 @@ describe('TopicTable Components', () => {
           hasKafkaConnectConfigured: true,
           hasSchemaRegistryConfigured: true,
           isTopicDeletionAllowed,
+          isDataHub,
           ftsEnabled: false,
           ftsDefaultEnabled: false,
         }}
@@ -320,6 +322,32 @@ describe('TopicTable Components', () => {
             screen.getByRole('button', { name: 'Confirm' })
           );
           expect(recreateTopicMock).toHaveBeenCalled();
+        });
+      });
+      describe('for DataHub cluster', () => {
+        it('offers only topic removal', async () => {
+          renderComponent({ topics: [topicsPayload[1]] }, false, true, true);
+          await expectDropdownExists();
+          const actionBtn = screen.getAllByRole('menuitem');
+          expect(actionBtn).toHaveLength(1);
+          expect(actionBtn[0]).toHaveTextContent('Remove Topic');
+        });
+        it('hides purge messages batch action', async () => {
+          renderComponent(
+            { topics: [externalTopicPayload], pageCount: 1 },
+            false,
+            true,
+            true
+          );
+          await userEvent.click(screen.getAllByRole('checkbox')[1]);
+          expect(
+            screen.getByRole('button', { name: 'Delete selected topics' })
+          ).toBeInTheDocument();
+          expect(
+            screen.queryByRole('button', {
+              name: 'Purge messages of selected topics',
+            })
+          ).not.toBeInTheDocument();
         });
       });
     });

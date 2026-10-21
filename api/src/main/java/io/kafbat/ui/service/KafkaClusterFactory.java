@@ -10,6 +10,7 @@ import io.kafbat.ui.client.RetryingKafkaConnectClient;
 import io.kafbat.ui.config.ClustersProperties;
 import io.kafbat.ui.config.WebclientProperties;
 import io.kafbat.ui.connect.api.KafkaConnectClientApi;
+import io.kafbat.ui.datahub.DataHubClientFactory;
 import io.kafbat.ui.emitter.PollingSettings;
 import io.kafbat.ui.exception.ValidationException;
 import io.kafbat.ui.model.ApplicationPropertyValidationDTO;
@@ -59,9 +60,12 @@ public class KafkaClusterFactory {
   private final DataSize webClientMaxBuffSize;
   private final Duration responseTimeout;
   private final JmxMetricsRetriever jmxMetricsRetriever;
+  private final DataHubClientFactory dataHubClientFactory;
 
   public KafkaClusterFactory(WebclientProperties webclientProperties,
-                             JmxMetricsRetriever jmxMetricsRetriever) {
+                             JmxMetricsRetriever jmxMetricsRetriever,
+                             DataHubClientFactory dataHubClientFactory) {
+    this.dataHubClientFactory = dataHubClientFactory;
     this.webClientMaxBuffSize = Optional.ofNullable(webclientProperties.getMaxInMemoryBufferSize())
         .map(DataSize::parse)
         .orElse(DEFAULT_WEBCLIENT_BUFFER);
@@ -76,6 +80,16 @@ public class KafkaClusterFactory {
     KafkaCluster.KafkaClusterBuilder builder = KafkaCluster.builder();
 
     builder.name(clusterProperties.getName());
+    if (clusterProperties.getType() == ClustersProperties.ClusterType.DATAHUB) {
+      return builder
+          .type(ClustersProperties.ClusterType.DATAHUB)
+          .datahub(clusterProperties.getDatahub())
+          .readOnly(clusterProperties.isReadOnly())
+          .masking(DataMasking.create(clusterProperties.getMasking()))
+          .pollingSettings(PollingSettings.create(clusterProperties, properties))
+          .originalProperties(clusterProperties)
+          .build();
+    }
     builder.bootstrapServers(clusterProperties.getBootstrapServers());
     builder.properties(convertProperties(clusterProperties.getProperties()));
     builder.consumerProperties(convertProperties(clusterProperties.getConsumerProperties()));
@@ -114,6 +128,10 @@ public class KafkaClusterFactory {
   }
 
   public Mono<ClusterConfigValidationDTO> validate(ClustersProperties.Cluster clusterProperties) {
+    if (clusterProperties.getType() == ClustersProperties.ClusterType.DATAHUB) {
+      return dataHubClientFactory.validate(clusterProperties.getDatahub())
+          .map(v -> new ClusterConfigValidationDTO().kafka(v));
+    }
     if (clusterProperties.getSsl() != null) {
       Optional<String> errMsg = validateTruststore(clusterProperties.getSsl());
       if (errMsg.isPresent()) {

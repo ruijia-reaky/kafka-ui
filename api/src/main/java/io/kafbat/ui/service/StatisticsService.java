@@ -7,6 +7,7 @@ import static io.kafbat.ui.service.ReactiveAdminClient.ClusterDescription;
 
 import io.kafbat.ui.api.model.ControllerType;
 import io.kafbat.ui.config.ClustersProperties;
+import io.kafbat.ui.datahub.DataHubMetadataService;
 import io.kafbat.ui.mapper.QuorumInfoMapper;
 import io.kafbat.ui.model.ClusterFeature;
 import io.kafbat.ui.model.KafkaCluster;
@@ -38,9 +39,11 @@ public class StatisticsService {
   private final StatisticsCache cache;
   private final ClustersProperties clustersProperties;
   private final QuorumInfoMapper quorumInfoMapper;
+  private final DataHubMetadataService dataHubMetadataService;
 
   public Mono<Statistics> updateCache(KafkaCluster c) {
-    return getStatistics(c).doOnSuccess(m -> cache.replace(c, m));
+    Mono<Statistics> statistics = c.isDataHub() ? dataHubMetadataService.loadStatistics(c) : getStatistics(c);
+    return statistics.doOnSuccess(m -> cache.replace(c, m));
   }
 
   private record LoadQuorumInfoResult(Optional<QuorumInfo> quorumInfo, ControllerType controllerType) {}

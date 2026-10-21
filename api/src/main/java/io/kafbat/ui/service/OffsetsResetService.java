@@ -9,6 +9,7 @@ import com.google.common.base.Preconditions;
 import io.kafbat.ui.exception.NotFoundException;
 import io.kafbat.ui.exception.ValidationException;
 import io.kafbat.ui.model.KafkaCluster;
+import io.kafbat.ui.service.backend.OffsetsResetOperations;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -30,7 +31,7 @@ import reactor.core.publisher.Mono;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class OffsetsResetService {
+public class OffsetsResetService implements OffsetsResetOperations {
 
   private final AdminClientService adminClientService;
 

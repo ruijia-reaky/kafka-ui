@@ -36,6 +36,7 @@ import io.kafbat.ui.service.KafkaConnectService;
 import io.kafbat.ui.service.TopicsService;
 import io.kafbat.ui.service.acl.AclsService;
 import io.kafbat.ui.service.analyze.TopicAnalysisService;
+import io.kafbat.ui.service.backend.ClusterBackendRegistry;
 import io.kafbat.ui.service.mcp.McpTool;
 import java.util.Comparator;
 import java.util.List;
@@ -61,6 +62,7 @@ public class TopicsController extends AbstractController implements TopicsApi, M
   private static final Integer DEFAULT_PAGE_SIZE = 25;
 
   private final TopicsService topicsService;
+  private final ClusterBackendRegistry backends;
   private final TopicAnalysisService topicAnalysisService;
   private final ClusterMapper clusterMapper;
   private final ClustersProperties clustersProperties;
@@ -79,7 +81,7 @@ public class TopicsController extends AbstractController implements TopicsApi, M
           .build();
 
       return validateAccess(context)
-          .then(topicsService.createTopic(getCluster(clusterName), topicCreation))
+          .then(backends.topics(getCluster(clusterName)).createTopic(getCluster(clusterName), topicCreation))
           .map(clusterMapper::toTopic)
           .map(s -> new ResponseEntity<>(s, HttpStatus.OK))
           .switchIfEmpty(Mono.just(ResponseEntity.notFound().build()))
@@ -133,7 +135,7 @@ public class TopicsController extends AbstractController implements TopicsApi, M
 
     return validateAccess(context)
         .then(
-            topicsService.deleteTopic(getCluster(clusterName), topicName)
+            backends.topics(getCluster(clusterName)).deleteTopic(getCluster(clusterName), topicName)
                 .thenReturn(ResponseEntity.ok().<Void>build())
         ).doOnEach(sig -> audit(context, sig));
   }
@@ -150,7 +152,7 @@ public class TopicsController extends AbstractController implements TopicsApi, M
         .build();
 
     return validateAccess(context).then(
-        topicsService.getTopicConfigs(getCluster(clusterName), topicName)
+        backends.topics(getCluster(clusterName)).getTopicConfigs(getCluster(clusterName), topicName)
             .map(lst -> lst.stream()
                 .map(InternalTopicConfig::from)
                 .map(clusterMapper::toTopicConfig)
@@ -177,7 +179,7 @@ public class TopicsController extends AbstractController implements TopicsApi, M
     var context = contextBuilder.build();
 
     return validateAccess(context).then(
-        topicsService.getTopicDetails(getCluster(clusterName), topicName)
+        backends.topics(getCluster(clusterName)).getTopicDetails(getCluster(clusterName), topicName)
             .map(clusterMapper::toTopicDetails)
             .map(ResponseEntity::ok)
     ).doOnEach(sig -> audit(context, sig));
@@ -199,7 +201,7 @@ public class TopicsController extends AbstractController implements TopicsApi, M
         .operationName("getTopics")
         .build();
 
-    return topicsService.getTopics(getCluster(clusterName), search, showInternal, fts)
+    return backends.topics(getCluster(clusterName)).getTopics(getCluster(clusterName), search, showInternal, fts)
         .flatMap(topics -> accessControlService.filterViewableTopics(topics, clusterName))
         .flatMap(topics -> {
           int pageSize = perPage != null && perPage > 0 ? perPage : DEFAULT_PAGE_SIZE;
@@ -222,7 +224,7 @@ public class TopicsController extends AbstractController implements TopicsApi, M
               .map(InternalTopic::getName)
               .collect(toList());
 
-          return topicsService.loadTopics(getCluster(clusterName), topicsPage)
+          return backends.topics(getCluster(clusterName)).loadTopics(getCluster(clusterName), topicsPage)
               .map(topicsToRender ->
                   new TopicsResponseDTO()
                       .topics(topicsToRender.stream().map(clusterMapper::toTopic).toList())
@@ -246,7 +248,7 @@ public class TopicsController extends AbstractController implements TopicsApi, M
     ClustersProperties.ClusterFtsProperties ftsProperties = clustersProperties.getFts();
     Comparator<InternalTopic> comparatorForTopic = getComparatorForTopic(orderBy, ftsProperties.use(fts));
 
-    return topicsService
+    return backends.topics(getCluster(clusterName))
         .getTopics(getCluster(clusterName), search, showInternal, fts)
         .flatMap(topics -> accessControlService.filterViewableTopics(topics, clusterName))
         .map(topics -> topics.stream().sorted(comparatorForTopic).toList())
@@ -343,7 +345,7 @@ public class TopicsController extends AbstractController implements TopicsApi, M
         .build();
 
     return validateAccess(context).then(
-        topicAnalysisService.analyze(getCluster(clusterName), topicName)
+        topicAnalysisService.analyze(backends.requireKafka(getCluster(clusterName)), topicName)
             .doOnEach(sig -> audit(context, sig))
             .thenReturn(ResponseEntity.ok().build())
     );

@@ -13,6 +13,7 @@ import { useNavigate } from 'react-router-dom';
 import useAppParams from 'lib/hooks/useAppParams';
 import { TopicConfigParams, TopicName } from 'lib/interfaces/topic';
 import { ClusterName } from 'lib/interfaces/cluster';
+import ClusterContext from 'components/contexts/ClusterContext';
 
 import CustomParams from './CustomParams/CustomParams';
 import TimeToRetain from './TimeToRetain';
@@ -72,6 +73,7 @@ const TopicForm: React.FC<Props> = ({
   } = useFormContext();
   const navigate = useNavigate();
   const { clusterName } = useAppParams<{ clusterName: ClusterName }>();
+  const { isDataHub } = React.useContext(ClusterContext);
   const getCleanUpPolicy =
     getCleanUpPolicyValue(cleanUpPolicy) || CleanupPolicyOptions[0].value;
 
@@ -155,44 +157,46 @@ const TopicForm: React.FC<Props> = ({
           </S.Column>
         </fieldset>
 
-        <S.Column>
-          <div>
-            <InputLabel htmlFor="topicFormMinInSyncReplicas">
-              Min In Sync Replicas
-            </InputLabel>
-            <Input
-              id="topicFormMinInSyncReplicas"
-              type="number"
-              placeholder="Min In Sync Replicas"
-              min="1"
-              name="minInSyncReplicas"
-              positiveOnly
-              integerOnly
-            />
-            <FormError>
-              <ErrorMessage errors={errors} name="minInSyncReplicas" />
-            </FormError>
-          </div>
-          {!isEditing && (
+        {!isDataHub && (
+          <S.Column>
             <div>
-              <InputLabel htmlFor="topicFormReplicationFactor">
-                Replication Factor
+              <InputLabel htmlFor="topicFormMinInSyncReplicas">
+                Min In Sync Replicas
               </InputLabel>
               <Input
-                id="topicFormReplicationFactor"
+                id="topicFormMinInSyncReplicas"
                 type="number"
-                placeholder="Replication Factor"
+                placeholder="Min In Sync Replicas"
                 min="1"
-                name="replicationFactor"
+                name="minInSyncReplicas"
                 positiveOnly
                 integerOnly
               />
               <FormError>
-                <ErrorMessage errors={errors} name="replicationFactor" />
+                <ErrorMessage errors={errors} name="minInSyncReplicas" />
               </FormError>
             </div>
-          )}
-        </S.Column>
+            {!isEditing && (
+              <div>
+                <InputLabel htmlFor="topicFormReplicationFactor">
+                  Replication Factor
+                </InputLabel>
+                <Input
+                  id="topicFormReplicationFactor"
+                  type="number"
+                  placeholder="Replication Factor"
+                  min="1"
+                  name="replicationFactor"
+                  positiveOnly
+                  integerOnly
+                />
+                <FormError>
+                  <ErrorMessage errors={errors} name="replicationFactor" />
+                </FormError>
+              </div>
+            )}
+          </S.Column>
+        )}
 
         <S.Column>
           <div>
@@ -200,50 +204,52 @@ const TopicForm: React.FC<Props> = ({
           </div>
         </S.Column>
 
-        <S.Column>
-          <div>
-            <InputLabel
-              id="topicFormRetentionBytesLabel"
-              htmlFor="topicFormRetentionBytes"
-            >
-              Max partition size in GB
-            </InputLabel>
-            <Controller
-              control={control}
-              name="retentionBytes"
-              defaultValue={RetentionBytesOptions[0].value}
-              render={({ field: { name, onChange } }) => (
-                <Select
-                  id="topicFormRetentionBytes"
-                  aria-labelledby="topicFormRetentionBytesLabel"
-                  name={name}
-                  value={getRetentionBytes}
-                  onChange={onChange}
-                  minWidth="100%"
-                  options={RetentionBytesOptions}
-                />
-              )}
-            />
-          </div>
+        {!isDataHub && (
+          <S.Column>
+            <div>
+              <InputLabel
+                id="topicFormRetentionBytesLabel"
+                htmlFor="topicFormRetentionBytes"
+              >
+                Max partition size in GB
+              </InputLabel>
+              <Controller
+                control={control}
+                name="retentionBytes"
+                defaultValue={RetentionBytesOptions[0].value}
+                render={({ field: { name, onChange } }) => (
+                  <Select
+                    id="topicFormRetentionBytes"
+                    aria-labelledby="topicFormRetentionBytesLabel"
+                    name={name}
+                    value={getRetentionBytes}
+                    onChange={onChange}
+                    minWidth="100%"
+                    options={RetentionBytesOptions}
+                  />
+                )}
+              />
+            </div>
 
-          <div>
-            <InputLabel htmlFor="topicFormMaxMessageBytes">
-              Maximum message size in bytes
-            </InputLabel>
-            <S.MessageSizeInput
-              id="topicFormMaxMessageBytes"
-              type="number"
-              placeholder="Maximum message size"
-              min="1"
-              name="maxMessageBytes"
-              positiveOnly
-              integerOnly
-            />
-            <FormError>
-              <ErrorMessage errors={errors} name="maxMessageBytes" />
-            </FormError>
-          </div>
-        </S.Column>
+            <div>
+              <InputLabel htmlFor="topicFormMaxMessageBytes">
+                Maximum message size in bytes
+              </InputLabel>
+              <S.MessageSizeInput
+                id="topicFormMaxMessageBytes"
+                type="number"
+                placeholder="Maximum message size"
+                min="1"
+                name="maxMessageBytes"
+                positiveOnly
+                integerOnly
+              />
+              <FormError>
+                <ErrorMessage errors={errors} name="maxMessageBytes" />
+              </FormError>
+            </div>
+          </S.Column>
+        )}
 
         <S.CustomParamsHeading>Custom parameters</S.CustomParamsHeading>
         <CustomParams
