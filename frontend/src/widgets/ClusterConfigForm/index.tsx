@@ -24,7 +24,21 @@ import CustomAuthentication from 'widgets/ClusterConfigForm/Sections/CustomAuthe
 import Authentication from 'widgets/ClusterConfigForm/Sections/Authentication/Authentication';
 import KSQL from 'widgets/ClusterConfigForm/Sections/KSQL';
 import Masking from 'widgets/ClusterConfigForm/Sections/Masking';
+import DataHubCluster from 'widgets/ClusterConfigForm/Sections/DataHubCluster';
+import ControlledSelect from 'components/common/Select/ControlledSelect';
 import { useConfirm } from 'lib/hooks/useConfirm';
+import { ApplicationConfigPropertiesKafkaClustersTypeEnum } from 'generated-sources';
+
+const CLUSTER_TYPE_OPTIONS = [
+  {
+    value: ApplicationConfigPropertiesKafkaClustersTypeEnum.KAFKA,
+    label: 'Kafka',
+  },
+  {
+    value: ApplicationConfigPropertiesKafkaClustersTypeEnum.DATAHUB,
+    label: 'Alibaba Cloud DataHub',
+  },
+];
 
 interface ClusterConfigFormProps {
   hasCustomConfig?: boolean;
@@ -32,6 +46,7 @@ interface ClusterConfigFormProps {
 }
 
 const CLUSTER_CONFIG_FORM_DEFAULT_VALUES: Partial<ClusterConfigFormValues> = {
+  type: ApplicationConfigPropertiesKafkaClustersTypeEnum.KAFKA,
   bootstrapServers: [{ host: '', port: '' }],
 };
 
@@ -110,7 +125,13 @@ const ClusterConfigForm: React.FC<ClusterConfigFormProps> = ({
 
     try {
       const response = await validate.mutateAsync(config);
-      const isConfigValid = getIsValidConfig(response, data.name);
+      const isConfigValid = getIsValidConfig(
+        response,
+        data.name,
+        data.type === ApplicationConfigPropertiesKafkaClustersTypeEnum.DATAHUB
+          ? 'DataHub Cluster'
+          : 'Kafka Cluster'
+      );
       if (isConfigValid) {
         showSuccessAlert({
           message: 'Configuration is valid',
@@ -127,6 +148,9 @@ const ClusterConfigForm: React.FC<ClusterConfigFormProps> = ({
   };
 
   const showCustomConfig = methods.watch('customAuth') && hasCustomConfig;
+  const isDataHub =
+    methods.watch('type') ===
+    ApplicationConfigPropertiesKafkaClustersTypeEnum.DATAHUB;
 
   const isValidateDisabled = isSubmitting;
   const isSubmitDisabled = isSubmitting || !isDirty;
@@ -135,22 +159,38 @@ const ClusterConfigForm: React.FC<ClusterConfigFormProps> = ({
     <FormProvider {...methods}>
       <StyledForm onSubmit={methods.handleSubmit(onSubmit)}>
         <FlexFieldset disabled={isFormDisabled || isSubmitting}>
-          <KafkaCluster />
+          <ControlledSelect
+            name="type"
+            label="Cluster type"
+            options={CLUSTER_TYPE_OPTIONS}
+            disabled={!!initialValues.name}
+          />
           <hr />
-          {showCustomConfig ? <CustomAuthentication /> : <Authentication />}
-          <hr />
-          <SchemaRegistry />
-          <hr />
-          <Serdes />
-          <hr />
-          <KafkaConnect />
-          <hr />
-          <KSQL />
-          <hr />
-          <Metrics />
-          <hr />
-          <Masking />
-          <hr />
+          {isDataHub ? (
+            <>
+              <DataHubCluster />
+              <hr />
+            </>
+          ) : (
+            <>
+              <KafkaCluster />
+              <hr />
+              {showCustomConfig ? <CustomAuthentication /> : <Authentication />}
+              <hr />
+              <SchemaRegistry />
+              <hr />
+              <Serdes />
+              <hr />
+              <KafkaConnect />
+              <hr />
+              <KSQL />
+              <hr />
+              <Metrics />
+              <hr />
+              <Masking />
+              <hr />
+            </>
+          )}
           <S.ButtonWrapper>
             <Button
               buttonSize="L"

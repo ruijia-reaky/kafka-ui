@@ -1,5 +1,8 @@
 import { object, string, number, array, boolean, mixed, lazy } from 'yup';
-import { ApplicationConfigPropertiesKafkaMaskingTypeEnum } from 'generated-sources';
+import {
+  ApplicationConfigPropertiesKafkaClustersTypeEnum,
+  ApplicationConfigPropertiesKafkaMaskingTypeEnum,
+} from 'generated-sources';
 
 const requiredString = string().required('required field');
 
@@ -272,12 +275,35 @@ const maskingsSchema = lazy((value) => {
   return mixed().optional();
 });
 
+const isDataHub = (type?: string) =>
+  type === ApplicationConfigPropertiesKafkaClustersTypeEnum.DATAHUB;
+
+const dataHubSchema = object({
+  endpoint: requiredString.url('must be a valid URL'),
+  projects: requiredString,
+  accessId: requiredString,
+  accessKey: requiredString,
+  securityToken: string(),
+});
+
 const formSchema = object({
   name: string()
     .required('required field')
     .min(3, 'Cluster name must be at least 3 characters'),
   readOnly: boolean().required('required field'),
-  bootstrapServers: array().of(bootstrapServerSchema).min(1),
+  type: mixed<ApplicationConfigPropertiesKafkaClustersTypeEnum>()
+    .oneOf(Object.values(ApplicationConfigPropertiesKafkaClustersTypeEnum))
+    .optional(),
+  datahub: mixed().when('type', {
+    is: isDataHub,
+    then: () => dataHubSchema,
+    otherwise: (schema) => schema.optional(),
+  }),
+  bootstrapServers: array().when('type', {
+    is: isDataHub,
+    then: (schema) => schema.optional(),
+    otherwise: (schema) => schema.of(bootstrapServerSchema).min(1),
+  }),
   truststore: sslSchema,
   auth: authSchema,
   schemaRegistry: urlWithAuthSchema,

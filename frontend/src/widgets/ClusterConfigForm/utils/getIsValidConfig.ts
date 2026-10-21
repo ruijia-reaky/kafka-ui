@@ -3,7 +3,8 @@ import { showAlert } from 'lib/errorHandling';
 
 export const getIsValidConfig = (
   { clusters }: ApplicationConfigValidation,
-  name: string
+  name: string,
+  clusterTitle = 'Kafka Cluster'
 ) => {
   let isValid = true;
   const prefix = `cluster-${name}`;
@@ -13,7 +14,7 @@ export const getIsValidConfig = (
     isValid = false;
     showAlert('error', {
       id: `${prefix}-kafka`,
-      title: 'Kafka Cluster',
+      title: clusterTitle,
       message: clusterErrors?.kafka.errorMessage,
     });
   }

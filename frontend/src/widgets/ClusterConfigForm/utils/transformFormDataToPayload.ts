@@ -2,7 +2,10 @@ import {
   ClusterConfigFormValues,
   Serde,
 } from 'widgets/ClusterConfigForm/types';
-import { ApplicationConfigPropertiesKafkaClusters } from 'generated-sources';
+import {
+  ApplicationConfigPropertiesKafkaClusters,
+  ApplicationConfigPropertiesKafkaClustersTypeEnum,
+} from 'generated-sources';
 
 import { getJaasConfig } from './getJaasConfig';
 import { convertFormKeyToPropsKey } from './convertFormKeyToPropsKey';
@@ -47,7 +50,33 @@ const transformSerdeProperties = (properties: Serde['properties']) => {
   return mappedProperties;
 };
 
+const transformDataHubFormData = (
+  data: ClusterConfigFormValues
+): ApplicationConfigPropertiesKafkaClusters => {
+  const { endpoint, projects, accessId, accessKey, securityToken } =
+    data.datahub || ({} as NonNullable<ClusterConfigFormValues['datahub']>);
+  return {
+    name: data.name,
+    type: ApplicationConfigPropertiesKafkaClustersTypeEnum.DATAHUB,
+    readOnly: data.readOnly,
+    datahub: {
+      endpoint,
+      projects: (projects || '')
+        .split(',')
+        .map((p) => p.trim())
+        .filter(Boolean),
+      accessId,
+      accessKey,
+      securityToken: securityToken || undefined,
+    },
+  };
+};
+
 export const transformFormDataToPayload = (data: ClusterConfigFormValues) => {
+  if (data.type === ApplicationConfigPropertiesKafkaClustersTypeEnum.DATAHUB) {
+    return transformDataHubFormData(data);
+  }
+
   const config: ApplicationConfigPropertiesKafkaClusters = {
     name: data.name,
     bootstrapServers: data.bootstrapServers

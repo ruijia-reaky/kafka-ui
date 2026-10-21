@@ -1,4 +1,7 @@
-import { ApplicationConfigPropertiesKafkaMaskingTypeEnum } from 'generated-sources';
+import {
+  ApplicationConfigPropertiesKafkaClustersTypeEnum,
+  ApplicationConfigPropertiesKafkaMaskingTypeEnum,
+} from 'generated-sources';
 
 type SecurityProtocol = 'SASL_SSL' | 'SASL_PLAINTEXT';
 type BootstrapServer = {
@@ -50,9 +53,20 @@ type Metrics = WithAuth &
     port: string;
   };
 
+export type DataHubFormValues = {
+  endpoint: string;
+  // comma-separated list of project names
+  projects: string;
+  accessId: string;
+  accessKey: string;
+  securityToken?: string;
+};
+
 export type ClusterConfigFormValues = {
   name: string;
   readOnly: boolean;
+  type?: ApplicationConfigPropertiesKafkaClustersTypeEnum;
+  datahub?: DataHubFormValues;
   bootstrapServers: BootstrapServer[];
   truststore?: {
     location: string;

@@ -3,6 +3,7 @@ package io.kafbat.ui.datahub;
 import io.kafbat.ui.config.ClustersProperties;
 import io.kafbat.ui.model.ApplicationConfigPropertiesDTO;
 import io.kafbat.ui.util.DynamicConfigOperations;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -41,11 +42,13 @@ public final class DataHubConfigSecrets {
     if (submitted.getKafka() == null || submitted.getKafka().getClusters() == null) {
       return submitted;
     }
-    Map<String, ClustersProperties.DataHubConfig> currentConfigs = Optional.ofNullable(current.getKafka())
+    List<ClustersProperties.Cluster> currentClusters = Optional.ofNullable(current.getKafka())
         .map(ClustersProperties::getClusters)
         .stream()
-        .flatMap(java.util.List::stream)
+        .flatMap(List::stream)
         .filter(c -> c.getName() != null && c.getDatahub() != null)
+        .toList();
+    Map<String, ClustersProperties.DataHubConfig> currentConfigs = currentClusters.stream()
         .collect(Collectors.toMap(ClustersProperties.Cluster::getName, ClustersProperties.Cluster::getDatahub,
             (a, b) -> a));
     for (ClustersProperties.Cluster cluster : submitted.getKafka().getClusters()) {
@@ -53,7 +56,9 @@ public final class DataHubConfigSecrets {
       if (dh == null) {
         continue;
       }
-      @Nullable ClustersProperties.DataHubConfig existing = currentConfigs.get(cluster.getName());
+      @Nullable ClustersProperties.DataHubConfig existing = Optional
+          .ofNullable(currentConfigs.get(cluster.getName()))
+          .orElseGet(() -> findSameAccount(currentClusters, dh));
       restore(dh, existing, ClustersProperties.DataHubConfig::getAccessKey,
           ClustersProperties.DataHubConfig::setAccessKey);
       restore(dh, existing, ClustersProperties.DataHubConfig::getSecurityToken,
@@ -69,6 +74,21 @@ public final class DataHubConfigSecrets {
     if (MASK.equals(getter.apply(submitted))) {
       setter.accept(submitted, existing == null ? null : getter.apply(existing));
     }
+  }
+
+  /** A renamed cluster is matched by the same endpoint and AccessKey ID. */
+  @Nullable
+  private static ClustersProperties.DataHubConfig findSameAccount(List<ClustersProperties.Cluster> clusters,
+                                                                  ClustersProperties.DataHubConfig submitted) {
+    if (submitted.getEndpoint() == null || submitted.getAccessId() == null) {
+      return null;
+    }
+    return clusters.stream()
+        .map(ClustersProperties.Cluster::getDatahub)
+        .filter(dh -> submitted.getEndpoint().equals(dh.getEndpoint())
+            && submitted.getAccessId().equals(dh.getAccessId()))
+        .findFirst()
+        .orElse(null);
   }
 
   @Nullable

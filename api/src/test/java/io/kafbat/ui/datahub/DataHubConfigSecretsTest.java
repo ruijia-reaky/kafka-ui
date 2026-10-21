@@ -45,6 +45,24 @@ class DataHubConfigSecretsTest {
     assertThat(restored.get(1).getDatahub().getAccessKey()).isNull();
   }
 
+  @Test
+  void maskedSecretsOfRenamedClusterAreRestoredBySameAccount() {
+    var currentCluster = cluster("dh", "real-key", null);
+    currentCluster.getDatahub().setEndpoint("https://dh.example.com");
+    currentCluster.getDatahub().setAccessId("id");
+    var renamed = cluster("dh-renamed", DataHubConfigSecrets.MASK, null);
+    renamed.getDatahub().setEndpoint("https://dh.example.com");
+    renamed.getDatahub().setAccessId("id");
+    var otherAccount = cluster("dh-other", DataHubConfigSecrets.MASK, null);
+    otherAccount.getDatahub().setEndpoint("https://dh.example.com");
+    otherAccount.getDatahub().setAccessId("another-id");
+
+    DataHubConfigSecrets.restore(properties(renamed, otherAccount), properties(currentCluster));
+
+    assertThat(renamed.getDatahub().getAccessKey()).isEqualTo("real-key");
+    assertThat(otherAccount.getDatahub().getAccessKey()).isNull();
+  }
+
   private static DynamicConfigOperations.PropertiesStructure properties(ClustersProperties.Cluster... clusters) {
     var kafka = new ClustersProperties();
     kafka.setClusters(List.of(clusters));

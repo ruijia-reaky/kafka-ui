@@ -1,5 +1,6 @@
 import {
   ApplicationConfigPropertiesKafkaClusters,
+  ApplicationConfigPropertiesKafkaClustersTypeEnum,
   ApplicationConfigPropertiesKafkaSchemaRegistrySsl,
 } from 'generated-sources';
 import { ClusterConfigFormValues } from 'widgets/ClusterConfigForm/types';
@@ -39,6 +40,25 @@ const parseProperties = (properties?: { [key: string]: string }) =>
 export const getInitialFormData = (
   payload: ApplicationConfigPropertiesKafkaClusters
 ) => {
+  if (
+    payload.type === ApplicationConfigPropertiesKafkaClustersTypeEnum.DATAHUB
+  ) {
+    const { datahub } = payload;
+    return {
+      name: payload.name as string,
+      readOnly: !!payload.readOnly,
+      type: ApplicationConfigPropertiesKafkaClustersTypeEnum.DATAHUB,
+      datahub: {
+        endpoint: datahub?.endpoint ?? '',
+        projects: (datahub?.projects ?? []).join(', '),
+        accessId: datahub?.accessId ?? '',
+        accessKey: datahub?.accessKey ?? '',
+        securityToken: datahub?.securityToken ?? '',
+      },
+      customAuth: {},
+    } as ClusterConfigFormValues;
+  }
+
   const {
     ssl,
     schemaRegistry,
@@ -56,6 +76,7 @@ export const getInitialFormData = (
   const initialValues: Partial<ClusterConfigFormValues> = {
     name: payload.name as string,
     readOnly: !!payload.readOnly,
+    type: ApplicationConfigPropertiesKafkaClustersTypeEnum.KAFKA,
     bootstrapServers: parseBootstrapServers(payload.bootstrapServers),
   };
 

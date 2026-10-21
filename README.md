@@ -179,6 +179,8 @@ KAFKA_CLUSTERS_1_DATAHUB_ACCESSKEY=...
 
 Keep the AccessKey in environment variables or a local file that is not committed. The config API returns
 `accessKey` and `securityToken` as `******`, and a masked value submitted back keeps the current secret.
+With `dynamic.config.enabled=true`, Kafka and DataHub clusters can also be added from the Dashboard
+("Configure new cluster"). DataHub fields are endpoint, projects, AccessKey ID/Secret, and optional STS token.
 
 | Kafka UI concept | DataHub | Status |
 |---|---|---|
